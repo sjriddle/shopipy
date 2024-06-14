@@ -103,6 +103,10 @@ celerybeat.pid
 
 # Environments
 .env
+.env.local
+.env.development
+.env.test
+.env.production
 .venv
 env/
 venv/
@@ -130,3 +134,4 @@ dmypy.json
 
 # templates
 .github/templates/*
+.DS_Store

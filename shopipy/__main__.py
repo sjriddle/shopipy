@@ -1,6 +1,5 @@
 """Entry point for shopipy."""
 
-from shopipy.cli import main  # pragma: no cover
+from shopipy.cli import app
 
-if __name__ == "__main__":  # pragma: no cover
-    main()
+app()

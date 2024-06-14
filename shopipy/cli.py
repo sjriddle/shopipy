@@ -1,28 +1,55 @@
-"""CLI interface for shopipy project.
+import typer
+from rich import print
 
-Be creative! do whatever you want!
+from shopipy.files import aggregate_image_files, create_pdf
+from shopipy.orders import get_open_orders
 
-- Install click or typer and create a CLI app
-- Use builtin argparse
-- Start a web application
-- Import things from your .base module
-"""
+app = typer.Typer(
+    rich_markup_mode="rich", no_args_is_help=True, name="shopipy"
+)
+orders_cmd = typer.Typer(rich_markup_mode="rich", no_args_is_help=True)
+
+orders = app.add_typer(
+    orders_cmd, name="orders", help="List or create new orders"
+)
 
 
-def main():  # pragma: no cover
+@orders_cmd.command(name="pdf")
+def generate_pdf() -> None:  # pragma: no cover
     """
-    The main function executes on commands:
-    `python -m shopipy` and `$ shopipy `.
-
-    This is your program's entry point.
-
-    You can change this function to do whatever you want.
-    Examples:
-        * Run a test suite
-        * Run a server
-        * Do some other stuff
-        * Run a command line application (Click, Typer, ArgParse)
-        * List all available tasks
-        * Run an application (Flask, FastAPI, Django, etc.)
+    Generates a PDF from open orders with assets
     """
-    print("This will do something")
+    results = get_open_orders()
+    image_files = aggregate_image_files(results["results"])
+    create_pdf(image_files["found"])
+
+
+@orders_cmd.command(name="list", help="List all open orders from Shopify")
+def list_orders() -> None:
+    from rich.console import Console
+    from rich.table import Table
+
+    """
+    List all orders in the database
+    """
+    print("[green][+] Listing all orders[/green]")
+    results = get_open_orders()["results"]
+    table = Table(title="Open Orders")
+    table.add_column("SKU", style="cyan")
+    table.add_column("Variant", style="magenta")
+    table.add_column("Quantity", style="green")
+
+    for result in results:
+        table.add_row(
+            result["sku"], result["variant"], str(result["quantity"])
+        )
+
+    console = Console()
+    console.print(table)
+
+
+@orders_cmd.command(
+    name="add", help="Add order to the latest pdf or generate new PDF"
+)
+def add_order() -> None:
+    print("[red][-] Not implemented yet[/red]")
