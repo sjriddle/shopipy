@@ -67,14 +67,14 @@ def list_orders(no_progress: Annotated[bool, typer.Option("--no-progress", "-n",
 
 @orders_cmd.command(name="add", help="Add order to the latest PDF")
 def add_order_item(
-    sku: Annotated[str, typer.Option(prompt=":keycap_#: Enter the Item SKU", help="Enter the Item SKU")],    
-    variant: Annotated[OrderVariant, typer.Option(prompt=True, show_choices=True, help="Select the Variant Size")],    
-    quantity: Annotated[str, typer.Option(prompt=True, help="Enter the Quantity")],    
+    sku: Annotated[str, typer.Option(prompt="Enter the Item SKU: ", help="Enter the Item SKU")],    
+    variant: Annotated[OrderVariant, typer.Option(prompt=True, show_choices=True, help="Select the Variant Size:")],    
+    quantity: Annotated[int, typer.Option(prompt=True, help="Enter the Quantity: ")],    
 ) -> None:
-    results = fetch_open_orders()["results"]
-    results.extend([{"sku": sku, "variant": variant.value, "quantity": quantity}])
-    print(len(results))
-    print(results)
-    print(variant)
-    # image_files = aggregate_image_files(results)
-    console.print(sku, variant.value, quantity)
+    console.print(f":white_check_mark: [bold] Adding order item to the latest PDF[/bold]: \
+                        - [cyan]{sku}[/cyan] \
+                        - [magenta]{variant}[/magenta] \
+                        - [green]{quantity}[/green]")
+    results = fetch_open_orders(additional_items=[{"sku": sku, "variant": variant, "quantity": quantity}])
+    image_files = aggregate_image_files(results)
+    create_pdf(image_files["found"])
