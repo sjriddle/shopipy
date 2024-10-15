@@ -8,5 +8,6 @@ rich
 requests
 python-dotenv
 img2pdf
+PyPDF2
 typer
 types-requests

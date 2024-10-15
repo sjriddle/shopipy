@@ -25,17 +25,16 @@ install:          ## Install the project in dev mode.
 	$(ENV_PREFIX)pip install -e .[test]
 
 .PHONY: fmt
-fmt:              ## Format code using black & isort.
-	$(ENV_PREFIX)isort shopipy/
-	$(ENV_PREFIX)black -l 79 shopipy/
-	$(ENV_PREFIX)black -l 79 tests/
+fmt:              ## Format code using Ruff.
+	$(ENV_PREFIX)ruff format --line-length 79 shopipy/ tests/
 
 .PHONY: lint
-lint:             ## Run pep8, black, mypy linters.
-	$(ENV_PREFIX)flake8 shopipy/
-	$(ENV_PREFIX)black -l 79 --check shopipy/
-	$(ENV_PREFIX)black -l 79 --check tests/
+lint:             ## Run Ruff and mypy linters.
+	$(ENV_PREFIX)ruff check shopipy/ tests/
 	$(ENV_PREFIX)mypy --ignore-missing-imports shopipy/
+
+.PHONY: fix      ## Fix code using Ruff.
+	$(ENV_PREFIX)ruff check --fix
 
 .PHONY: test
 test: lint        ## Run tests and generate coverage report.
@@ -56,6 +55,7 @@ clean:            ## Clean unused files.
 	@rm -rf .cache
 	@rm -rf .pytest_cache
 	@rm -rf .mypy_cache
+	@rm -rf .ruff_cache
 	@rm -rf build
 	@rm -rf dist
 	@rm -rf *.egg-info

@@ -79,8 +79,8 @@ Usage: make <target>
 Targets:
 help:             ## Show the help.
 install:          ## Install the project in dev mode.
-fmt:              ## Format code using black & isort.
-lint:             ## Run pep8, black, mypy linters.
+fmt:              ## Format code using ruff & isort.
+lint:             ## Run ruff, mypy linters.
 test: lint        ## Run tests and generate coverage report.
 watch:            ## Run tests on every change.
 clean:            ## Clean unused files.
