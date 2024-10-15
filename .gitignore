@@ -135,3 +135,7 @@ dmypy.json
 # templates
 .github/templates/*
 .DS_Store
+
+# ruff
+.ruff*
+.ruff_cache/
