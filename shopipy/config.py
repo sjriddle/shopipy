@@ -14,9 +14,7 @@ APP_NAME = "shopipy"
 # Shopify API credentials and configuration
 ACCESS_TOKEN = os.getenv("ADMIN_API_KEY")
 SHOP_NAME = os.getenv("STORE_NAME")
-API_VERSION = os.getenv(
-  "API_VERSION", "2024-04"
-)  # Use a default API version if not set
+API_VERSION = os.getenv("API_VERSION", "2024-04")
 
 # Get the current user's home directory
 HOME_DIR = Path.home()
@@ -30,7 +28,6 @@ PDF_DIR = Path(os.getenv("PDF_DIR", HOME_DIR / "Documents" / "prints"))
 REQUIRED_ENV_VARS = {
   "ADMIN_API_KEY": ACCESS_TOKEN,
   "STORE_NAME": SHOP_NAME,
-  # ASSET_PATH and FILES_PATH have default values now
 }
 
 missing_vars = [var for var, value in REQUIRED_ENV_VARS.items() if not value]
