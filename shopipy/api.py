@@ -1,24 +1,14 @@
-# shopipy/api.py
-
-import logging
 from typing import Any, Dict, List, Optional
+from urllib.parse import parse_qs, urlparse
 
 import requests
 from requests.exceptions import RequestException
-from rich import print
-from rich.logging import RichHandler
+from rich.console import Console
 from rich.table import Table
 
 from shopipy.config import ACCESS_TOKEN, API_VERSION, SHOP_URL
 
-logging.basicConfig(
-  level="ERROR",
-  format="%(message)s",
-  datefmt="[%X]",
-  handlers=[RichHandler(rich_tracebacks=True, markup=True)],
-)
-
-log = logging.getLogger("rich")
+console = Console()
 
 
 class ShopifyAPI:
@@ -37,33 +27,105 @@ class ShopifyAPI:
       "X-Shopify-Access-Token": self.access_token
     }
 
-  def fetch_open_orders(self) -> List[Dict[str, Any]]:
+  def get_order_count(self) -> int:
     """
-    Fetch open (unfulfilled) orders from Shopify.
+    Fetch the total number of open (unfulfilled) orders.
 
-    :return: List of order dictionaries.
+    :return: Total count of orders.
     """
-    url: str = f"{self.shop_url}/api/{self.api_version}/orders.json"
+    url: str = f"{self.shop_url}/api/{self.api_version}/orders/count.json"
     params: Dict[str, Any] = {
       "status": "open",
       "fulfillment_status": "unfulfilled",
-      "financial_status": "paid",
-      "limit": 250,
     }
 
     try:
       response = requests.get(url, headers=self.headers, params=params)
       response.raise_for_status()
     except RequestException as e:
-      log.error("API Call Failed: %s", e)
+      console.print_exception(f"[bold red]API Call Failed:[/bold red] {e}")
+      return 0
+
+    count = response.json().get("count", 0)
+    return count
+
+  def fetch_open_orders(self) -> List[Dict[str, Any]]:
+    """
+    Fetch all open (unfulfilled) orders from Shopify using pagination.
+
+    :return: List of order dictionaries.
+    """
+    total_orders = self.get_order_count()
+    if total_orders == 0:
+      console.print(":x: No open orders found")
       return []
 
-    orders: List[Dict[str, Any]] = response.json().get("orders", [])
-    if not orders:
-      log.info("No open orders found")
-      return []
+    url: str = f"{self.shop_url}/api/{self.api_version}/orders.json"
+    params: Dict[str, Any] = {
+      "status": "open",
+      "fulfillment_status": "unfulfilled",
+      "limit": 250,
+    }
+
+    orders: List[Dict[str, Any]] = []
+    fetched_orders = 0
+
+    while True:
+      try:
+        response = requests.get(url, headers=self.headers, params=params)
+        response.raise_for_status()
+      except RequestException as e:
+        console.print_exception(f"[bold red]API Call Failed:[/bold red] {e}")
+        break
+
+      current_orders = response.json().get("orders", [])
+      orders.extend(current_orders)
+      fetched_orders += len(current_orders)
+
+      # Check if all orders have been fetched
+      if fetched_orders >= total_orders:
+        break
+
+      # Check for 'Link' header for pagination
+      link_header = response.headers.get("Link", "")
+      if 'rel="next"' not in link_header:
+        # No more pages to fetch
+        break
+
+      # Extract 'page_info' for the next page
+      next_page_info = self.extract_next_page_info(link_header)
+      if not next_page_info:
+        break
+
+      # Update params for the next request
+      params = {
+        "page_info": next_page_info,
+        "limit": 250,
+      }
 
     return orders
+
+  def extract_next_page_info(self, link_header: str) -> Optional[str]:
+    """
+    Extracts the 'page_info' parameter from the Link header for pagination.
+
+    :param link_header: The 'Link' header string from the response.
+    :return: The 'page_info' parameter string or None if not found.
+    """
+    links = link_header.split(",")
+    for link in links:
+      segments = link.strip().split(";")
+      if len(segments) < 2:
+        continue
+      link_part = segments[0].strip("<>")
+      rel_part = segments[1].strip()
+      if rel_part == 'rel="next"':
+        # Parse the URL to extract 'page_info'
+        parsed_url = urlparse(link_part)
+        query_params = parse_qs(parsed_url.query)
+        page_info = query_params.get("page_info", [None])[0]
+        return page_info
+    return None
 
   def extract_order_items(self) -> List[Dict[str, Any]]:
     """
@@ -106,7 +168,7 @@ class ShopifyAPI:
     if orders is None:
       orders = self.extract_order_items()
 
-    table = Table(title="Open Orders", highlight=True, show_lines=True)
+    table = Table()
     table.add_column("SKU", style="cyan")
     table.add_column("Variant", style="magenta")
     table.add_column("Quantity", style="green")
@@ -114,4 +176,4 @@ class ShopifyAPI:
     for order in orders:
       table.add_row(order["sku"], order["variant"], str(order["quantity"]))
 
-    print(table)
+    console.print(table)
