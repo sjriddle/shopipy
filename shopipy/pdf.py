@@ -1,6 +1,6 @@
 import io
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import img2pdf
 import PyPDF2
@@ -61,7 +61,7 @@ class PDFGenerator:
     :return: Dictionary containing lists of found and missing image files.
     """
     image_files: List[Path] = []
-    missing_images: List[Path] = []
+    missing_sku: List[Path] = []
 
     for item in self.orders:
       sku: str = item["sku"]
@@ -85,20 +85,12 @@ class PDFGenerator:
       if image_file.exists():
         image_files.extend([image_file] * quantity)
       else:
-        missing_images.append(image_file)
+        missing_sku.append(sku)
 
     if not image_files:
       raise FileNotFoundError("No image files found")
 
-    # Display missing images if any
-    if missing_images:
-      console.print(
-        "\n:warning: [bold yellow]The following image files were not found:[/bold yellow]"
-      )
-      for missing_image in missing_images:
-        console.print(f" - {missing_image}")
-
-    return {"found": image_files, "missing": missing_images}
+    return {"found": image_files, "missing": missing_sku}
 
   def create_pdf(self, image_files: List[Path]) -> None:
     """
@@ -121,9 +113,8 @@ class PDFGenerator:
     try:
       with open(self.PDF_PATH, "wb") as f:
         f.write(img2pdf.convert(image_files_str))
-      console.print(f":white_check_mark: PDF created at {self.PDF_PATH}")
     except Exception as e:
-      console.print(f":x: Failed to create PDF: {e}")
+      console.print_exception(f":x: Failed to create PDF: {e}")
       raise
 
   def get_most_recent_pdf(self) -> Optional[Path]:
@@ -191,8 +182,8 @@ class PDFGenerator:
     """
     Aggregate images and create a PDF.
     """
-    images_info: Dict[str, List[Path]] = self.aggregate_image_files()
-    image_files: List[Path] = images_info["found"]
+    images_info: Dict[str, List[Any]] = self.aggregate_image_files()
+    image_files: List[Any] = images_info["found"]
 
     # Create PDF from images
     self.create_pdf(image_files)

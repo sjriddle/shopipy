@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any, Dict, List, Union
 
 import typer
 from dotenv import dotenv_values, find_dotenv, load_dotenv, set_key, unset_key
@@ -45,13 +46,28 @@ def generate_pdf() -> None:
   Generate a PDF from open orders.
   """
   # Create an instance of PDFGenerator
-  pdf_generator = PDFGenerator(api=shopify_api)
+  pdfr = PDFGenerator(api=shopify_api)
   with console.status("Generating PDF...", spinner="aesthetic"):
     try:
-      pdf_generator.process_pdf()
+      assets_info: Dict[str, List[Path]] = pdfr.aggregate_image_files()
+      items_found: List[Path] = assets_info["found"]
+      items_missing: List[Any] = assets_info.get("missing", [])
+
+      # Create PDF from images
+      pdfr.create_pdf(items_found)
+
       console.print(
-        ":white_check_mark: [bold]PDF generated successfully.[/bold]"
+        f"\n:white_check_mark: [bold]PDF generated successfully in folder: {pdfr.PDF_PATH}[/bold]"
       )
+
+      # Print missing SKUs if any
+      if items_missing:
+        console.print(
+          f":mag_right: [bold]Missing items in folder: {pdfr.ASSET_PATH}[/bold]"
+        )
+        for sku in items_missing:
+          console.print(sku, style="yellow")
+
     except Exception as e:
       console.print(f":x: Failed to generate PDF: {e}")
 
@@ -144,9 +160,9 @@ def create_folders(
   Create directories for storing assets.
   """
   # Create an instance of AssetOrganizer
-  image_organizer = AssetOrganizer(api=shopify_api)
+  asset_organizer = AssetOrganizer(api=shopify_api)
   try:
-    missing_skus, asset_path = image_organizer.organize_images_by_variant()
+    missing_skus, asset_path = asset_organizer.organize_images_by_variant()
     console.print(
       ":white_check_mark: [bold]Folders created successfully with assets.[/bold]"
     )
@@ -154,7 +170,7 @@ def create_folders(
     # Print missing SKUs if any
     if missing_skus:
       console.print(
-        f":mag_right: [bold]Missing files in folder: {asset_path}[/bold]"
+        f":mag_right: [bold]Missing items in folder: {asset_path}[/bold]"
       )
       for sku in missing_skus:
         console.print(sku, style="yellow")

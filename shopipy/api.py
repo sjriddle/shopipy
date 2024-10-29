@@ -168,7 +168,9 @@ class ShopifyAPI:
     if orders is None:
       orders = self.extract_order_items()
 
-    table = Table()
+    table = Table(
+      title="[bold]Unfulfilled Orders[/bold]",
+    )
     table.add_column("SKU", style="cyan")
     table.add_column("Variant", style="magenta")
     table.add_column("Quantity", style="green")
