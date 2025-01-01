@@ -1,4 +1,5 @@
 import shutil
+import string
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -51,24 +52,74 @@ class AssetOrganizer:
     }
     return variant_title_map.get(variant_title, variant_title)
 
-  def organize_images_by_variant(self) -> List[str]:
+    # def organize_images_by_variant(self) -> List[str]:
+    #   """
+    #   Organize images into folders based on their variant sizes.
+
+    #   :return: List of missing image SKUs.
+    #   """
+    #   missing_skus: List[str] = []
+
+    #   for variant in OrderVariant:
+    #     # Folder location for the variant
+    #     folder_path: Path = self.FILES_PATH / variant.value
+
+    #     # Remove existing folder and its contents if it exists
+    #     if folder_path.exists():
+    #       shutil.rmtree(folder_path)
+
+    #     # Create directory for the variant
+    #     folder_path.mkdir(parents=True, exist_ok=True)
+
+    #   for item in self.orders:
+    #     sku: str = item["sku"]
+    #     variant_title: str = item["variant"]
+    #     quantity: int = item["quantity"]
+
+    #     # Map variant titles to standard sizes
+    #     variant_title = self.map_variant_title(variant_title)
+    #     if variant_title is None:
+    #       continue  # Skip this item
+
+    #     # Use OrderVariant Enum for variant titles
+    #     try:
+    #       variant = OrderVariant(variant_title)
+    #     except ValueError:
+    #       # Log invalid variant title
+    #       continue
+
+    #     # Source file path for the SKU image
+    #     source_image_file: Path = self.ASSET_PATH / variant.value / f"{sku}.jpg"
+
+    #     # Destination folder path
+    #     dest_folder: Path = self.FILES_PATH / variant.value
+
+    #     if source_image_file.exists():
+    #       for i in range(1, quantity + 1):
+    #         dest_filename: str = (
+    #           f"{sku}_{i}.jpg" if quantity > 1 else f"{sku}.jpg"
+    #         )
+
+    #         # Destination file path
+    #         dest_image_file: Path = dest_folder / dest_filename
+    #         try:
+    #           shutil.copy(source_image_file, dest_image_file)
+    #         except Exception as e:
+    #           console.print_exception(f"Log copy failure: {e}")
+    #           pass
+    #     else:
+    #       # Add the missing SKU to the list
+    #       missing_skus.append(sku)
+
+    #   return missing_skus, self.ASSET_PATH
+
+  def organize_images_by_set(self) -> List[str]:
     """
-    Organize images into folders based on their variant sizes.
+    Organize images into folders based on their set SKUs.
 
-    :return: List of missing image SKUs.
+    :return: List of missing set SKUs.
     """
-    missing_skus: List[str] = []
-
-    for variant in OrderVariant:
-      # Folder location for the variant
-      folder_path: Path = self.FILES_PATH / variant.value
-
-      # Remove existing folder and its contents if it exists
-      if folder_path.exists():
-        shutil.rmtree(folder_path)
-
-      # Create directory for the variant
-      folder_path.mkdir(parents=True, exist_ok=True)
+    missing_set_skus: List[str] = []
 
     for item in self.orders:
       sku: str = item["sku"]
@@ -87,27 +138,30 @@ class AssetOrganizer:
         # Log invalid variant title
         continue
 
-      # Source file path for the SKU image
-      source_image_file: Path = self.ASSET_PATH / variant.value / f"{sku}.jpg"
-
       # Destination folder path
       dest_folder: Path = self.FILES_PATH / variant.value
 
-      if source_image_file.exists():
-        for i in range(1, quantity + 1):
-          dest_filename: str = (
-            f"{sku}_{i}.jpg" if quantity > 1 else f"{sku}.jpg"
-          )
+      for letter in string.ascii_lowercase + "":
+        set_sku = f"{sku:}{letter}"
+        source_image_file: Path = (
+          self.ASSET_PATH / variant.value / f"{set_sku}.jpg"
+        )
 
-          # Destination file path
-          dest_image_file: Path = dest_folder / dest_filename
-          try:
-            shutil.copy(source_image_file, dest_image_file)
-          except Exception as e:
-            console.print_exception(f"Log copy failure: {e}")
-            pass
-      else:
-        # Add the missing SKU to the list
-        missing_skus.append(sku)
+        if source_image_file.exists():
+          for i in range(1, quantity + 1):
+            dest_filename: str = (
+              f"{set_sku}_{i}.jpg" if quantity > 1 else f"{set_sku}.jpg"
+            )
 
-    return missing_skus, self.ASSET_PATH
+            # Destination file path
+            dest_image_file: Path = dest_folder / dest_filename
+            try:
+              shutil.copy(source_image_file, dest_image_file)
+            except Exception as e:
+              console.print_exception(f"Log copy failure: {e}")
+              pass
+        else:
+          # Add the missing set SKU to the list
+          missing_set_skus.append(set_sku)
+
+    return missing_set_skus
